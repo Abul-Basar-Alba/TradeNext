@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "487640794407",
+    "project_id": "tradenest-1de29",
+    "storage_bucket": "tradenest-1de29.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:487640794407:android:3b08097577a2d3f33c5502",
+        "android_client_info": {
+          "package_name": "com.tradenest.tradenest"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "487640794407-glhca37t6obvd223h86huf1qajmhpsbe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjmtKmVKhGUQOkFOInkr18EZJmxf6jQi8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "487640794407-glhca37t6obvd223h86huf1qajmhpsbe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
