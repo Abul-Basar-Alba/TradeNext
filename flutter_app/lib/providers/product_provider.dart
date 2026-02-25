@@ -1,165 +1,115 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product.dart';
-import '../models/api_response.dart';
-import '../services/product_service.dart';
-import '../config/constants.dart';
+import '../services/firestore_service.dart';
 
-// Product Service Provider
-final productServiceProvider = Provider<ProductService>((ref) {
-  return ProductService();
+// Firestore Service Provider
+final firestoreServiceProvider = Provider<FirestoreService>((ref) {
+  return FirestoreService();
 });
 
 // Product Filter State
 class ProductFilters {
   final String? type;
   final String? category;
-  final double? minPrice;
-  final double? maxPrice;
-  final String? location;
-  final String? search;
-  final String? sort;
+  final String? status;
+  final int? limit;
 
   ProductFilters({
     this.type,
     this.category,
-    this.minPrice,
-    this.maxPrice,
-    this.location,
-    this.search,
-    this.sort,
+    this.status,
+    this.limit,
   });
 
   ProductFilters copyWith({
     String? type,
     String? category,
-    double? minPrice,
-    double? maxPrice,
-    String? location,
-    String? search,
-    String? sort,
+    String? status,
+    int? limit,
   }) {
     return ProductFilters(
       type: type ?? this.type,
       category: category ?? this.category,
-      minPrice: minPrice ?? this.minPrice,
-      maxPrice: maxPrice ?? this.maxPrice,
-      location: location ?? this.location,
-      search: search ?? this.search,
-      sort: sort ?? this.sort,
+      status: status ?? this.status,
+      limit: limit ?? this.limit,
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      if (type != null) 'type': type,
-      if (category != null) 'category': category,
-      if (minPrice != null) 'minPrice': minPrice,
-      if (maxPrice != null) 'maxPrice': maxPrice,
-      if (location != null) 'location': location,
-      if (search != null) 'search': search,
-      if (sort != null) 'sort': sort,
-    };
-  }
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ProductFilters &&
+          runtimeType == other.runtimeType &&
+          category == other.category &&
+          type == other.type &&
+          status == other.status &&
+          limit == other.limit;
+
+  @override
+  int get hashCode =>
+      category.hashCode ^ type.hashCode ^ status.hashCode ^ limit.hashCode;
+
 }
+
+// Default filters
+final ProductFilters defaultFilters = ProductFilters(
+  status: 'active',
+  limit: 20,
+);
 
 // Product Filter Provider
 final productFiltersProvider = StateProvider<ProductFilters>((ref) {
-  return ProductFilters();
+  return defaultFilters;
 });
 
-// Products List Notifier
-class ProductsNotifier extends StateNotifier<AsyncValue<List<Product>>> {
-  final ProductService _productService;
-  final Ref _ref;
-  int _currentPage = 1;
-  bool _hasMore = true;
-  List<Product> _allProducts = [];
-
-  ProductsNotifier(this._productService, this._ref)
-      : super(const AsyncValue.loading()) {
-    loadProducts();
-  }
-
-  // Load products with filters
-  Future<void> loadProducts({bool refresh = false}) async {
-    if (refresh) {
-      _currentPage = 1;
-      _hasMore = true;
-      _allProducts = [];
-      state = const AsyncValue.loading();
-    }
-
-    if (!_hasMore) return;
-
-    try {
-      final filters = _ref.read(productFiltersProvider);
-      
-      final response = await _productService.getProducts(
-        type: filters.type,
-        category: filters.category,
-        minPrice: filters.minPrice,
-        maxPrice: filters.maxPrice,
-        location: filters.location,
-        search: filters.search,
-        sort: filters.sort,
-        page: _currentPage,
-        limit: AppConstants.defaultPageSize,
-      );
-
-      _allProducts.addAll(response.products);
-      _hasMore = response.hasMore;
-      _currentPage++;
-
-      state = AsyncValue.data(_allProducts);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
-  }
-
-  // Load more products (pagination)
-  Future<void> loadMore() async {
-    if (!_hasMore || state.isLoading) return;
-    await loadProducts();
-  }
-
-  // Refresh products
-  Future<void> refresh() async {
-    await loadProducts(refresh: true);
-  }
-
-  bool get hasMore => _hasMore;
-}
-
-// Products Notifier Provider
-final productsNotifierProvider =
-    StateNotifierProvider<ProductsNotifier, AsyncValue<List<Product>>>((ref) {
-  final productService = ref.read(productServiceProvider);
-  return ProductsNotifier(productService, ref);
+// Products Stream Provider - Real-time from Firestore
+final productsProvider = StreamProvider<List<Product>>((ref) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  final filters = ref.watch(productFiltersProvider);
+  
+  return firestoreService.getProducts(
+    category: filters.category,
+    type: filters.type,
+    status: filters.status ?? 'active',
+    limit: filters.limit ?? 20,
+  );
 });
 
 // Single Product Provider
-final productProvider = FutureProvider.family<Product, String>((ref, id) async {
-  final productService = ref.read(productServiceProvider);
-  return await productService.getProductById(id);
+final productByIdProvider = FutureProvider.family<Product?, String>((ref, productId) async {
+  final firestoreService = ref.read(firestoreServiceProvider);
+  
+  // Increment views
+  await firestoreService.incrementViews(productId);
+  
+  return await firestoreService.getProductById(productId);
 });
 
-// My Products Provider
-final myProductsProvider = FutureProvider<List<Product>>((ref) async {
-  final productService = ref.read(productServiceProvider);
-  return await productService.getMyProducts();
+// User Products Provider
+final userProductsProvider = StreamProvider.family<List<Product>, String>((ref, userId) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return firestoreService.getUserProducts(userId);
 });
 
-// Create Product Provider
-final createProductProvider = Provider<ProductService>((ref) {
-  return ref.read(productServiceProvider);
+// Search Products Provider
+final searchProductsProvider = StreamProvider.family<List<Product>, String>((ref, searchTerm) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  
+  if (searchTerm.isEmpty) {
+    return Stream.value([]);
+  }
+  
+  return firestoreService.searchProducts(searchTerm);
 });
 
-// Update Product Provider
-final updateProductProvider = Provider<ProductService>((ref) {
-  return ref.read(productServiceProvider);
+// User Favorites Provider
+final userFavoritesProvider = StreamProvider.family<List<String>, String>((ref, userId) {
+  final firestoreService = ref.watch(firestoreServiceProvider);
+  return firestoreService.getUserFavorites(userId);
 });
 
-// Delete Product Provider
-final deleteProductProvider = Provider<ProductService>((ref) {
-  return ref.read(productServiceProvider);
+// Category Counts Provider
+final categoryCountsProvider = FutureProvider<Map<String, int>>((ref) async {
+  final firestoreService = ref.read(firestoreServiceProvider);
+  return await firestoreService.getProductCountByCategory();
 });

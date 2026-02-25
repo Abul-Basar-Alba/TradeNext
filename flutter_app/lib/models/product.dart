@@ -19,11 +19,15 @@ class Product {
   final List<String> images;
   final bool isForSale;
   final bool isForRent;
-  final String owner;
+  final String owner; // Deprecated - use ownerId
+  final String? ownerId; // Firebase Auth UID
+  final String? ownerName; // Owner display name
+  final String? ownerPhone; // Owner phone number
   final User? ownerDetails; // Populated owner data
-  final String status; // 'available', 'rented', 'sold', 'unavailable'
+  final String status; // 'available', 'rented', 'sold', 'unavailable', 'active'
   final int views;
   final bool featured;
+  final bool? isFeatured; // Alias for featured
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -42,10 +46,14 @@ class Product {
     this.isForSale = false,
     this.isForRent = false,
     required this.owner,
+    this.ownerId,
+    this.ownerName,
+    this.ownerPhone,
     this.ownerDetails,
     this.status = 'available',
     this.views = 0,
     this.featured = false,
+    this.isFeatured,
     required this.createdAt,
     required this.updatedAt,
   });

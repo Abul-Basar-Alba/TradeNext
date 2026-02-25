@@ -7,6 +7,7 @@ import '../../widgets/custom_button.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../config/theme.dart';
+import '../../services/firebase_auth_service.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -19,8 +20,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _firebaseAuth = FirebaseAuthService();
   bool _obscurePassword = true;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
 
   @override
   void dispose() {
@@ -55,6 +58,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _googleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+
+    try {
+      // Firebase দিয়ে Google Sign-In
+      final userCredential = await _firebaseAuth.signInWithGoogle();
+      
+      if (userCredential.user != null) {
+        // Firebase user পাওয়া গেছে
+        final firebaseUser = userCredential.user!;
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('স্বাগতম ${firebaseUser.displayName ?? "User"}!')),
+          );
+          context.go('/');
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleLoading = false);
       }
     }
   }
@@ -157,9 +191,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 // Google Sign In
                 CustomButton(
                   text: 'Google দিয়ে লগইন',
-                  onPressed: () {
-                    // TODO: Implement Google Sign In
-                  },
+                  onPressed: _googleSignIn,
+                  isLoading: _isGoogleLoading,
                   isOutlined: true,
                   icon: Icons.g_mobiledata,
                 ),

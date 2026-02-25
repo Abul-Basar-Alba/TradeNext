@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../config/theme.dart';
 import '../../config/constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../widgets/product_card.dart';
+import '../../widgets/loading_widget.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -12,20 +15,19 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
+    final isLoggedIn = authState.value != null;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('ট্রেডনেস্ট'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {
               // TODO: Notifications
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_outlined),
-            onPressed: () => context.push('/profile'),
           ),
         ],
       ),
@@ -41,10 +43,15 @@ class HomeScreen extends ConsumerWidget {
                   hintText: 'আপনি কি খুঁজছেন?',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(30),
+                    borderRadius: BorderRadius.circular(8),
                   ),
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
                 ),
-                onTap: () => context.push('/products'),
+                readOnly: true,
+                onTap: () {
+                  // Will switch to search tab
+                },
               ),
             ),
             // Welcome Message
@@ -114,23 +121,84 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 32),
-            // Featured Products Section (TODO)
+            // Featured Products Section - Real Firestore Data
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Text('জনপ্রিয় বিজ্ঞাপন', style: AppTheme.headingMedium),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('জনপ্রিয় বিজ্ঞাপন', style: AppTheme.headingMedium),
+                  TextButton(
+                    onPressed: () => context.push('/products'),
+                    child: const Text('সব দেখুন'),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            const Center(
-              child: Text('লোড হচ্ছে...'),
+            // Load Products from Firestore
+            Consumer(
+              builder: (context, ref, child) {
+                final productsAsync = ref.watch(productsProvider);
+
+                return productsAsync.when(
+                  data: (products) {
+                    if (products.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32.0),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
+                              SizedBox(height: 16),
+                              Text(
+                                'এখনো কোনো বিজ্ঞাপন নেই',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.75,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: products.length > 6 ? 6 : products.length,
+                      itemBuilder: (context, index) {
+                        return ProductCard(product: products[index]);
+                      },
+                    );
+                  },
+                  loading: () => const LoadingWidget(),
+                  error: (error, stack) => Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error: ${error.toString()}'),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () => ref.refresh(productsProvider),
+                          child: const Text('আবার চেষ্টা করুন'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 32),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.push('/products/create'),
-        icon: const Icon(Icons.add),
-        label: const Text('বিজ্ঞাপন দিন'),
       ),
     );
   }
