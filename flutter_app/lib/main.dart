@@ -5,23 +5,23 @@ import 'firebase_options.dart';
 
 import 'config/theme.dart';
 import 'config/routes.dart';
-import 'services/api_service.dart';
+import 'config/supabase_config.dart';
 import 'services/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
+  // Initialize Firebase (Authentication only)
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize services
+  // Initialize Supabase (Database & Storage)
+  await SupabaseConfig.initialize();
+
+  // Initialize local storage
   final storageService = StorageService();
   await storageService.init();
-
-  final apiService = ApiService();
-  apiService.init();
 
   runApp(
     const ProviderScope(
