@@ -16,9 +16,6 @@ class SupabaseConfig {
   // Supabase client instance
   static SupabaseClient get client => Supabase.instance.client;
   
-  // Database reference
-  static PostgrestClient get db => client.from('products');
-  
   // Storage reference
   static SupabaseStorageClient get storage => client.storage;
 }

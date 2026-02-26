@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/product.dart';
-import '../services/firestore_service.dart';
+import '../services/supabase_service.dart';
 
-// Firestore Service Provider
-final firestoreServiceProvider = Provider<FirestoreService>((ref) {
-  return FirestoreService();
+// Supabase Service Provider
+final supabaseServiceProvider = Provider<SupabaseService>((ref) {
+  return SupabaseService();
 });
 
 // Product Filter State
@@ -62,12 +62,12 @@ final productFiltersProvider = StateProvider<ProductFilters>((ref) {
   return defaultFilters;
 });
 
-// Products Stream Provider - Real-time from Firestore
+// Products Stream Provider - Real-time from Supabase
 final productsProvider = StreamProvider<List<Product>>((ref) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
+  final supabaseService = ref.watch(supabaseServiceProvider);
   final filters = ref.watch(productFiltersProvider);
   
-  return firestoreService.getProducts(
+  return supabaseService.getProducts(
     category: filters.category,
     type: filters.type,
     status: filters.status ?? 'active',
@@ -77,39 +77,39 @@ final productsProvider = StreamProvider<List<Product>>((ref) {
 
 // Single Product Provider
 final productByIdProvider = FutureProvider.family<Product?, String>((ref, productId) async {
-  final firestoreService = ref.read(firestoreServiceProvider);
+  final supabaseService = ref.read(supabaseServiceProvider);
   
   // Increment views
-  await firestoreService.incrementViews(productId);
+  await supabaseService.incrementViews(productId);
   
-  return await firestoreService.getProductById(productId);
+  return await supabaseService.getProductById(productId);
 });
 
 // User Products Provider
 final userProductsProvider = StreamProvider.family<List<Product>, String>((ref, userId) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return firestoreService.getUserProducts(userId);
+  final supabaseService = ref.watch(supabaseServiceProvider);
+  return supabaseService.getUserProducts(userId);
 });
 
 // Search Products Provider
 final searchProductsProvider = StreamProvider.family<List<Product>, String>((ref, searchTerm) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
+  final supabaseService = ref.watch(supabaseServiceProvider);
   
   if (searchTerm.isEmpty) {
     return Stream.value([]);
   }
   
-  return firestoreService.searchProducts(searchTerm);
+  return supabaseService.searchProducts(searchTerm);
 });
 
 // User Favorites Provider
 final userFavoritesProvider = StreamProvider.family<List<String>, String>((ref, userId) {
-  final firestoreService = ref.watch(firestoreServiceProvider);
-  return firestoreService.getUserFavorites(userId);
+  final supabaseService = ref.watch(supabaseServiceProvider);
+  return supabaseService.getUserFavorites(userId);
 });
 
 // Category Counts Provider
 final categoryCountsProvider = FutureProvider<Map<String, int>>((ref) async {
-  final firestoreService = ref.read(firestoreServiceProvider);
-  return await firestoreService.getProductCountByCategory();
+  final supabaseService = ref.read(supabaseServiceProvider);
+  return await supabaseService.getProductCountByCategory();
 });

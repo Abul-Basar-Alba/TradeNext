@@ -80,7 +80,7 @@ flutter:
     # - assets/images/
     # - assets/icons/
     - assets/translations/
-    # - .env
+    - .env
 
   # fonts:
   #   - family: Hind Siliguri

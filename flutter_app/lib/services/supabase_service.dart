@@ -26,12 +26,12 @@ class SupabaseService {
             'owner_id': product.ownerId,
             'owner_name': product.ownerName,
             'owner_phone': product.ownerPhone,
-            'owner_email': product.owner?.email,
-            'location': product.location,
-            'division': product.division,
-            'district': product.district,
+            'owner_email': product.ownerName, // Using ownerName temporarily
+            'location': product.location.getFullLocation(),
+            'division': product.location.city,
+            'district': product.location.area ?? product.location.city,
             'images': product.images,
-            'featured': product.featured ?? false,
+            'featured': product.featured,
           })
           .select()
           .single();
@@ -117,13 +117,18 @@ class SupabaseService {
   /// Search products
   Stream<List<Product>> searchProducts(String query) {
     try {
+      // Using simple filter for now
       return _client
           .from('products')
           .stream(primaryKey: ['id'])
-          .ilike('title', '%$query%')
           .order('created_at', ascending: false)
           .map((data) {
-        return data.map((item) => Product.fromJson(item)).toList();
+        // Client-side filtering
+        return data
+            .map((item) => Product.fromJson(item))
+            .where((product) => 
+                product.title.toLowerCase().contains(query.toLowerCase()))
+            .toList();
       });
     } catch (e) {
       throw Exception('Failed to search products: $e');
