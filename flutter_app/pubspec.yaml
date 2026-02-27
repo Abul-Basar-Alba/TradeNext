@@ -46,7 +46,7 @@ dependencies:
 
   # Authentication (Firebase only)
   google_sign_in: ^6.2.1
-  firebase_core: ^2.24.2
+  firebase_core: ^2.32.0
   firebase_auth: ^4.16.0
   
   # Database & Storage (Supabase)

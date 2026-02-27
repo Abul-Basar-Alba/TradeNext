@@ -5,6 +5,8 @@ import 'package:tradenest/screens/search/search_screen.dart';
 import 'package:tradenest/screens/chat/chat_screen.dart';
 import 'package:tradenest/screens/profile/profile_screen.dart';
 import 'package:tradenest/config/routes.dart';
+import 'package:tradenest/config/app_strings.dart';
+import 'package:tradenest/providers/language_provider.dart';
 import 'package:go_router/go_router.dart';
 
 class MainNavigationScreen extends ConsumerStatefulWidget {
@@ -50,6 +52,10 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final language = ref.watch(languageProvider);
+    
+    String tr(String key) => AppStrings.translate(key, language);
+    
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -67,25 +73,25 @@ class _MainNavigationScreenState extends ConsumerState<MainNavigationScreen> {
               _buildNavItem(
                 icon: Icons.home_outlined,
                 activeIcon: Icons.home,
-                label: 'হোম',
+                label: tr('home'),
                 index: 0,
               ),
               _buildNavItem(
                 icon: Icons.search,
-                label: 'সার্চ',
+                label: tr('search'),
                 index: 1,
               ),
               const SizedBox(width: 40), // Space for FAB
               _buildNavItem(
                 icon: Icons.chat_bubble_outline,
                 activeIcon: Icons.chat_bubble,
-                label: 'চ্যাট',
+                label: tr('chat'),
                 index: 3,
               ),
               _buildNavItem(
                 icon: Icons.person_outline,
                 activeIcon: Icons.person,
-                label: 'অ্যাকাউন্ট',
+                label: tr('account'),
                 index: 4,
               ),
             ],

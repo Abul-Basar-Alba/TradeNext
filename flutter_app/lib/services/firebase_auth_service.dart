@@ -1,6 +1,5 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:google_sign_in/google_sign_in.dart';
-import '../models/user.dart';
 
 class FirebaseAuthService {
   final firebase_auth.FirebaseAuth _firebaseAuth = firebase_auth.FirebaseAuth.instance;
@@ -10,7 +9,7 @@ class FirebaseAuthService {
   firebase_auth.User? get currentUser => _firebaseAuth.currentUser;
 
   // Sign in with Google
-  Future<firebase_auth.UserCredential> signInWithGoogle() async {
+  Future<firebase_auth.User?> signInWithGoogle() async {
     try {
       // Trigger the Google Sign-In flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -29,37 +28,49 @@ class FirebaseAuthService {
       );
 
       // Sign in to Firebase with the Google credential
-      return await _firebaseAuth.signInWithCredential(credential);
+      final userCredential = await _firebaseAuth.signInWithCredential(credential);
+      return userCredential.user;
     } catch (e) {
       rethrow;
     }
   }
 
   // Sign in with Email/Password
-  Future<firebase_auth.UserCredential> signInWithEmailPassword(
-    String email,
-    String password,
-  ) async {
+  Future<firebase_auth.User?> signInWithEmailPassword({
+    required String email,
+    required String password,
+  }) async {
     try {
-      return await _firebaseAuth.signInWithEmailAndPassword(
+      final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
+      return userCredential.user;
     } catch (e) {
       rethrow;
     }
   }
 
   // Register with Email/Password
-  Future<firebase_auth.UserCredential> registerWithEmailPassword(
-    String email,
-    String password,
-  ) async {
+  Future<firebase_auth.User?> registerWithEmailPassword({
+    required String email,
+    required String password,
+    String? displayName,
+  }) async {
     try {
-      return await _firebaseAuth.createUserWithEmailAndPassword(
+      final userCredential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      
+      // Update display name if provided
+      if (displayName != null && userCredential.user != null) {
+        await userCredential.user!.updateDisplayName(displayName);
+        await userCredential.user!.reload();
+        return _firebaseAuth.currentUser;
+      }
+      
+      return userCredential.user;
     } catch (e) {
       rethrow;
     }

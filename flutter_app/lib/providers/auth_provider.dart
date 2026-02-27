@@ -1,24 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/user.dart';
-import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
+import '../services/firebase_auth_service.dart';
 
-// Auth Service Provider
-final authServiceProvider = Provider<AuthService>((ref) {
-  return AuthService();
+// Firebase Auth Service Provider
+final firebaseAuthServiceProvider = Provider<FirebaseAuthService>((ref) {
+  return FirebaseAuthService();
 });
 
 // Current User State Provider
-final authStateProvider = StreamProvider<User?>((ref) async* {
-  final authService = ref.read(authServiceProvider);
-  
-  // Try to get current user
-  final user = await authService.getCurrentUser();
-  yield user;
+final authStateProvider = StreamProvider<firebase_auth.User?>((ref) {
+  return firebase_auth.FirebaseAuth.instance.authStateChanges();
 });
 
 // Auth Notifier
-class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
-  final AuthService _authService;
+class AuthNotifier extends StateNotifier<AsyncValue<firebase_auth.User?>> {
+  final FirebaseAuthService _authService;
 
   AuthNotifier(this._authService) : super(const AsyncValue.loading()) {
     _init();
@@ -26,93 +22,68 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> _init() async {
     try {
-      final user = await _authService.getCurrentUser();
+      final user = firebase_auth.FirebaseAuth.instance.currentUser;
       state = AsyncValue.data(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
     }
   }
 
-  // Register
-  Future<void> register({
-    required String name,
+  // Register with Email/Password
+  Future<void> registerWithEmail({
     required String email,
     required String password,
-    String? phone,
+    String? displayName,
   }) async {
     state = const AsyncValue.loading();
     try {
-      final user = await _authService.register(
-        name: name,
+      final user = await _authService.registerWithEmailPassword(
         email: email,
         password: password,
-        phone: phone,
+        displayName: displayName,
       );
       state = AsyncValue.data(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-      rethrow;
     }
   }
 
-  // Login
-  Future<void> login({
+  // Login with Email/Password
+  Future<void> loginWithEmail({
     required String email,
     required String password,
   }) async {
     state = const AsyncValue.loading();
     try {
-      final user = await _authService.login(
+      final user = await _authService.signInWithEmailPassword(
         email: email,
         password: password,
       );
       state = AsyncValue.data(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-      rethrow;
     }
   }
 
-  // Google Sign-In
-  Future<void> googleSignIn(String idToken) async {
+  // Login with Google
+  Future<void> loginWithGoogle() async {
     state = const AsyncValue.loading();
     try {
-      final user = await _authService.googleSignIn(idToken);
+      final user = await _authService.signInWithGoogle();
       state = AsyncValue.data(user);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-      rethrow;
     }
   }
 
   // Logout
   Future<void> logout() async {
+    state = const AsyncValue.loading();
     try {
-      await _authService.logout();
+      await _authService.signOut();
       state = const AsyncValue.data(null);
     } catch (e, stack) {
       state = AsyncValue.error(e, stack);
-    }
-  }
-
-  // Update Profile
-  Future<void> updateProfile({
-    String? name,
-    String? phone,
-    String? city,
-    String? area,
-  }) async {
-    try {
-      final user = await _authService.updateProfile(
-        name: name,
-        phone: phone,
-        city: city,
-        area: area,
-      );
-      state = AsyncValue.data(user);
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-      rethrow;
     }
   }
 
@@ -120,12 +91,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   bool get isLoggedIn => state.value != null;
 
   // Get current user
-  User? get currentUser => state.value;
+  firebase_auth.User? get currentUser => state.value;
 }
 
-// Auth Notifier Provider
-final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<User?>>((ref) {
-  final authService = ref.read(authServiceProvider);
+// Auth Notifier Provider  
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AsyncValue<firebase_auth.User?>>((ref) {
+  final authService = ref.watch(firebaseAuthServiceProvider);
   return AuthNotifier(authService);
 });

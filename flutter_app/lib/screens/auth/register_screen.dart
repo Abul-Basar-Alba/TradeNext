@@ -42,13 +42,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(authNotifierProvider.notifier).register(
-            name: _nameController.text.trim(),
+      await ref.read(authNotifierProvider.notifier).registerWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
-            phone: _phoneController.text.trim().isNotEmpty
-                ? _phoneController.text.trim()
-                : null,
+            displayName: _nameController.text.trim(),
           );
 
       if (mounted) {

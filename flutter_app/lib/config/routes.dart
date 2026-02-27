@@ -15,7 +15,7 @@ import '../screens/products/edit_product_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/my_ads_screen.dart';
 import '../screens/profile/edit_profile_screen.dart';
-import '../screens/profile/settings_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import '../screens/profile/favorites_screen.dart';
 import '../providers/auth_provider.dart';
 
@@ -129,12 +129,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
-        path: '/profile/settings',
+        path: '/settings',
         name: 'settings',
         builder: (context, state) => const SettingsScreen(),
       ),
       GoRoute(
-        path: '/profile/favorites',
+        path: '/favorites',
         name: 'favorites',
         builder: (context, state) => const FavoritesScreen(),
       ),

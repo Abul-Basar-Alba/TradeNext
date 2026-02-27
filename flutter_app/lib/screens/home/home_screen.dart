@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../config/theme.dart';
 import '../../config/constants.dart';
+import '../../config/app_strings.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../providers/product_provider.dart';
 import '../../widgets/product_card.dart';
 import '../../widgets/loading_widget.dart';
@@ -14,12 +16,15 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final language = ref.watch(languageProvider);
     final authState = ref.watch(authNotifierProvider);
     final isLoggedIn = authState.value != null;
+    
+    String tr(String key) => AppStrings.translate(key, language);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ট্রেডনেস্ট'),
+        title: Text(language == 'bn' ? 'ট্রেডনেস্ট' : 'TradeNest'),
         backgroundColor: Theme.of(context).colorScheme.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -40,7 +45,7 @@ class HomeScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16.0),
               child: TextField(
                 decoration: InputDecoration(
-                  hintText: 'আপনি কি খুঁজছেন?',
+                  hintText: tr('search_placeholder'),
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -54,15 +59,60 @@ class HomeScreen extends ConsumerWidget {
                 },
               ),
             ),
-            // Welcome Message
-            if (authState.value != null)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Text(
-                  'স্বাগতম, ${authState.value!.name}!',
-                  style: AppTheme.headingMedium,
-                ),
-              ),
+            // Login/Welcome Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+              child: authState.value == null
+                  ? Card(
+                      elevation: 2,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              tr('welcome_guest'),
+                              style: AppTheme.headingMedium,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              tr('guest_message'),
+                              style: AppTheme.bodySmall.copyWith(color: Colors.grey.shade600),
+                            ),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: ElevatedButton(
+                                    onPressed: () => context.push('/login'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppTheme.primaryColor,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                    child: Text(tr('login')),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: OutlinedButton(
+                                    onPressed: () => context.push('/register'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                    ),
+                                    child: Text(tr('register')),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Text(
+                      '${tr('welcome_user')}, ${authState.value!.displayName ?? authState.value!.email}!',
+                      style: AppTheme.headingMedium,
+                    ),
+            ),
             const SizedBox(height: 24),
             // Main Options
             Padding(
@@ -71,7 +121,7 @@ class HomeScreen extends ConsumerWidget {
                 children: [
                   Expanded(
                     child: _OptionCard(
-                      title: 'ভাড়া নিন',
+                      title: tr('rent_now'),
                       icon: Icons.shopping_bag_outlined,
                       color: Colors.blue,
                       onTap: () => context.push('/products?type=rent'),
@@ -80,7 +130,7 @@ class HomeScreen extends ConsumerWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: _OptionCard(
-                      title: 'কিনুন বা বিক্রয় করুন',
+                      title: tr('buy_sell'),
                       icon: Icons.sell_outlined,
                       color: Colors.green,
                       onTap: () => context.push('/products?type=sell'),
@@ -96,10 +146,12 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('ক্যাটাগরি', style: AppTheme.headingMedium),
+                  Text(tr('categories'), style: AppTheme.headingMedium),
                   TextButton(
-                    onPressed: () => context.push('/products'),
-                    child: const Text('সব দেখুন'),
+                    onPressed: () {
+                      // View all categories
+                    },
+                    child: Text(tr('view_all')),
                   ),
                 ],
               ),
@@ -127,10 +179,10 @@ class HomeScreen extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('জনপ্রিয় বিজ্ঞাপন', style: AppTheme.headingMedium),
+                  Text(tr('recent_ads'), style: AppTheme.headingMedium),
                   TextButton(
                     onPressed: () => context.push('/products'),
-                    child: const Text('সব দেখুন'),
+                    child: Text(tr('view_all')),
                   ),
                 ],
               ),
@@ -144,16 +196,16 @@ class HomeScreen extends ConsumerWidget {
                 return productsAsync.when(
                   data: (products) {
                     if (products.isEmpty) {
-                      return const Padding(
-                        padding: EdgeInsets.all(32.0),
+                      return Padding(
+                        padding: const EdgeInsets.all(32.0),
                         child: Center(
                           child: Column(
                             children: [
-                              Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
+                              const Icon(Icons.inbox_outlined, size: 64, color: Colors.grey),
+                              const SizedBox(height: 16),
                               Text(
-                                'এখনো কোনো বিজ্ঞাপন নেই',
-                                style: TextStyle(color: Colors.grey),
+                                tr('no_ads'),
+                                style: const TextStyle(color: Colors.grey),
                               ),
                             ],
                           ),

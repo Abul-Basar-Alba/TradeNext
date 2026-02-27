@@ -8,6 +8,8 @@ import '../../providers/auth_provider.dart';
 import '../../utils/validators.dart';
 import '../../config/theme.dart';
 import '../../services/firebase_auth_service.dart';
+import '../../config/app_strings.dart';
+import '../../providers/language_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -38,15 +40,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await ref.read(authNotifierProvider.notifier).login(
+      await ref.read(authNotifierProvider.notifier).loginWithEmail(
             email: _emailController.text.trim(),
             password: _passwordController.text,
           );
 
       if (mounted) {
+        final language = ref.read(languageProvider);
+        final message = AppStrings.translate('login_success', language);
         context.go('/');
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('লগইন সফল হয়েছে')),
+          SnackBar(content: Text(message)),
         );
       }
     } catch (e) {
@@ -67,15 +71,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       // Firebase দিয়ে Google Sign-In
-      final userCredential = await _firebaseAuth.signInWithGoogle();
+      final firebaseUser = await _firebaseAuth.signInWithGoogle();
       
-      if (userCredential.user != null) {
+      if (firebaseUser != null) {
         // Firebase user পাওয়া গেছে
-        final firebaseUser = userCredential.user!;
-        
         if (mounted) {
+          final language = ref.read(languageProvider);
+          final welcome = AppStrings.translate('welcome', language);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('স্বাগতম ${firebaseUser.displayName ?? "User"}!')),
+            SnackBar(content: Text('$welcome ${firebaseUser.displayName ?? "User"}!')),
           );
           context.go('/');
         }
@@ -95,6 +99,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final language = ref.watch(languageProvider);
+    String tr(String key) => AppStrings.translate(key, language);
+    
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -114,20 +121,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 // Title
                 Text(
-                  'ট্রেডনেস্ট',
+                  language == 'bn' ? 'ট্রেডনেস্ট' : 'TradeNest',
                   textAlign: TextAlign.center,
                   style: AppTheme.headingLarge,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'আপনার অ্যাকাউন্টে লগইন করুন',
+                  tr('login_subtitle'),
                   textAlign: TextAlign.center,
                   style: AppTheme.bodyMedium,
                 ),
                 const SizedBox(height: 40),
                 // Email Field
                 CustomTextField(
-                  label: 'ইমেইল',
+                  label: tr('email'),
                   hint: 'example@email.com',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -137,7 +144,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 20),
                 // Password Field
                 CustomTextField(
-                  label: 'পাসওয়ার্ড',
+                  label: tr('password'),
                   hint: '••••••••',
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -162,13 +169,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     onPressed: () {
                       // TODO: Implement forgot password
                     },
-                    child: const Text('পাসওয়ার্ড ভুলে গেছেন?'),
+                    child: Text(tr('forgot_password')),
                   ),
                 ),
                 const SizedBox(height: 24),
                 // Login Button
                 CustomButton(
-                  text: 'লগইন করুন',
+                  text: tr('login'),
                   onPressed: _login,
                   isLoading: _isLoading,
                 ),
@@ -180,7 +187,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Text(
-                        'অথবা',
+                        tr('or'),
                         style: AppTheme.bodyMedium,
                       ),
                     ),
@@ -190,7 +197,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 const SizedBox(height: 24),
                 // Google Sign In
                 CustomButton(
-                  text: 'Google দিয়ে লগইন',
+                  text: tr('google_signin'),
                   onPressed: _googleSignIn,
                   isLoading: _isGoogleLoading,
                   isOutlined: true,
@@ -201,10 +208,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('অ্যাকাউন্ট নেই? '),
+                    Text(tr('no_account')),
                     TextButton(
                       onPressed: () => context.go('/auth/register'),
-                      child: const Text('নিবন্ধন করুন'),
+                      child: Text(tr('register')),
                     ),
                   ],
                 ),
