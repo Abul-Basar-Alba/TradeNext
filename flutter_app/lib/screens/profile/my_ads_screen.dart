@@ -2,78 +2,91 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/products_list_provider.dart';
-import '../../config/app_colors.dart';
 
 class MyAdsScreen extends ConsumerWidget {
   const MyAdsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final lang = ref.watch(languageProvider);
-    final user = ref.watch(authProvider);
+    final userAsync = ref.watch(authStateProvider);
     
-    if (user == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text(lang == 'bn' ? 'আমার বিজ্ঞাপনসমূহ' : 'My Ads'),
-        ),
-        body: Center(
-          child: Text(lang == 'bn' ? 'দয়া করে লগইন করুন' : 'Please login'),
-        ),
-      );
-    }
+    return userAsync.when(
+      data: (user) {
+        if (user == null) {
+          return Scaffold(
+            appBar: AppBar(
+              title: const Text('আমার বিজ্ঞাপনসমূহ'),
+            ),
+            body: const Center(
+              child: Text('দয়া করে লগইন করুন'),
+            ),
+          );
+        }
 
-    final myProductsAsync = ref.watch(myProductsProvider(user.uid));
+        final myProductsAsync = ref.watch(myProductsProvider(user.uid));
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(lang == 'bn' ? 'আমার বিজ্ঞাপনসমূহ' : 'My Ads'),
-      ),
-      body: myProductsAsync.when(
-        data: (products) {
-          if (products.isEmpty) {
-            return Center(
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('আমার বিজ্ঞাপনসমূহ'),
+          ),
+          body: myProductsAsync.when(
+            data: (products) {
+              if (products.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'কোন বিজ্ঞাপন নেই',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(myProductsProvider(user.uid));
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: products.length,
+                  itemBuilder: (context, index) {
+                    final product = products[index];
+                    return _MyAdCard(product: product);
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey[400]),
-                  const SizedBox(height: 16),
-                  Text(
-                    lang == 'bn' ? 'কোন বিজ্ঞাপন নেই' : 'No ads yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                  const Text('কিছু ভুল হয়েছে'),
+                  const SizedBox(height: 8),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(myProductsProvider(user.uid)),
+                    child: const Text('আবার চেষ্টা করুন'),
                   ),
                 ],
               ),
-            );
-          }
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(myProductsProvider(user.uid));
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: products.length,
-              itemBuilder: (context, index) {
-                final product = products[index];
-                return _MyAdCard(product: product);
-              },
             ),
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(lang == 'bn' ? 'কিছু ভুল হয়েছে' : 'Something went wrong'),
-              const SizedBox(height: 8),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(myProductsProvider(user.uid)),
-                child: Text(lang == 'bn' ? 'আবার চেষ্টা করুন' : 'Retry'),
-              ),
-            ],
           ),
+        );
+      },
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, stack) => Scaffold(
+        appBar: AppBar(
+          title: const Text('আমার বিজ্ঞাপনসমূহ'),
+        ),
+        body: const Center(
+          child: Text('Error loading user'),
         ),
       ),
     );
@@ -149,7 +162,7 @@ class _MyAdCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
+                        color: Color(0xFF23E5DB),
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -172,7 +185,7 @@ class _MyAdCard extends StatelessWidget {
                     onPressed: () {
                       // TODO: Navigate to edit screen
                     },
-                    color: AppColors.primary,
+                    color: const Color(0xFF23E5DB),
                   ),
                   IconButton(
                     icon: const Icon(Icons.delete_outline, size: 20),

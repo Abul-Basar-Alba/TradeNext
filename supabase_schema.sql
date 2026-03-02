@@ -164,6 +164,26 @@ CREATE POLICY "Users can send messages"
   );
 
 -- ==========================================
+-- STORAGE BUCKET POLICIES
+-- ==========================================
+
+-- Create storage bucket for product images (if not exists)
+-- Note: This needs to be done via Supabase Dashboard > Storage
+-- Bucket name: product-images
+-- Public: true
+-- File size limit: 50MB
+-- Allowed MIME types: image/*
+
+-- Storage policies for product-images bucket
+-- Enable public access for viewing images
+-- Allow anyone to upload (we'll validate via service role key)
+
+-- To execute in Supabase SQL Editor:
+-- 1. Go to Storage > product-images bucket > Policies
+-- 2. Add policy: "Public Access" - SELECT - No conditions - true
+-- 3. Add policy: "Authenticated Upload" - INSERT - No conditions - true
+
+-- ==========================================
 -- FUNCTIONS
 -- ==========================================
 

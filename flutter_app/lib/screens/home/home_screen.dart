@@ -323,6 +323,9 @@ class _ProductCard extends StatelessWidget {
     final price = product['price'];
     final title = product['title'] ?? 'No Title';
 
+    // Debug print to check image URL
+    print('🖼️ Product: $title, Image URL: $imageUrl');
+
     return Card(
       clipBehavior: Clip.antiAlias,
       elevation: 2,
