@@ -1,7 +1,13 @@
 import 'dart:io';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tradenest/config/supabase_config.dart';
 import 'package:tradenest/models/product.dart';
+
+// Provider for SupabaseService
+final supabaseServiceProvider = Provider<SupabaseService>((ref) {
+  return SupabaseService();
+});
 
 class SupabaseService {
   final SupabaseClient _client = SupabaseConfig.client;
@@ -10,8 +16,23 @@ class SupabaseService {
   // PRODUCT CRUD OPERATIONS
   // ==========================================
 
-  /// Create a new product
-  Future<Product> createProduct(Product product) async {
+  /// Create a new product from Map data
+  Future<Map<String, dynamic>> createProduct(Map<String, dynamic> productData) async {
+    try {
+      final response = await _client
+          .from('products')
+          .insert(productData)
+          .select()
+          .single();
+
+      return response;
+    } catch (e) {
+      throw Exception('Failed to create product: $e');
+    }
+  }
+
+  /// Create a new product from Product model
+  Future<Product> createProductFromModel(Product product) async {
     try {
       final response = await _client
           .from('products')
@@ -39,6 +60,36 @@ class SupabaseService {
       return Product.fromJson(response);
     } catch (e) {
       throw Exception('Failed to create product: $e');
+    }
+  }
+
+  /// Get all products as Map (simple format)
+  Future<List<Map<String, dynamic>>> getAllProducts({int limit = 20}) async {
+    try {
+      final response = await _client
+          .from('products')
+          .select()
+          .order('created_at', ascending: false)
+          .limit(limit);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('Failed to get products: $e');
+    }
+  }
+
+  /// Get user's own products (as Map for display)
+  Future<List<Map<String, dynamic>>> getUserProductsMaps(String userId) async {
+    try {
+      final response = await _client
+          .from('products')
+          .select()
+          .eq('owner_id', userId)
+          .order('created_at', ascending: false);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      throw Exception('Failed to get user products: $e');
     }
   }
 
@@ -159,6 +210,27 @@ class SupabaseService {
   Future<String> uploadImage(File file, String fileName) async {
     try {
       final path = 'products/$fileName';
+      
+      await _client.storage
+          .from('product-images')
+          .upload(path, file);
+
+      final publicUrl = _client.storage
+          .from('product-images')
+          .getPublicUrl(path);
+
+      return publicUrl;
+    } catch (e) {
+      throw Exception('Failed to upload image: $e');
+    }
+  }
+
+  /// Upload product image with user folder
+  Future<String> uploadProductImage(File file, String userId) async {
+    try {
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final fileName = '${timestamp}_${file.path.split('/').last}';
+      final path = '$userId/$fileName';
       
       await _client.storage
           .from('product-images')

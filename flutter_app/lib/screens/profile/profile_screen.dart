@@ -64,7 +64,7 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: () => context.push('/login'),
+                            onPressed: () => context.push('/auth/login'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppTheme.primaryColor,
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -78,7 +78,7 @@ class ProfileScreen extends ConsumerWidget {
                         const SizedBox(width: 16),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => context.push('/register'),
+                            onPressed: () => context.push('/auth/register'),
                             style: OutlinedButton.styleFrom(
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
@@ -106,8 +106,11 @@ class ProfileScreen extends ConsumerWidget {
                         radius: 50,
                         backgroundColor: Colors.white,
                         child: Text(
-                          authState.value!.displayName?.substring(0, 1).toUpperCase() ?? 
-                          authState.value!.email!.substring(0, 1).toUpperCase(),
+                          authState.value!.displayName != null && authState.value!.displayName!.isNotEmpty
+                              ? authState.value!.displayName!.substring(0, 1).toUpperCase()
+                              : (authState.value!.email != null && authState.value!.email!.isNotEmpty
+                                  ? authState.value!.email!.substring(0, 1).toUpperCase()
+                                  : 'U'),
                           style: const TextStyle(
                             fontSize: 40,
                             color: AppTheme.primaryColor,

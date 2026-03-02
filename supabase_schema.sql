@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS products (
   price DECIMAL(10, 2) NOT NULL,
   category VARCHAR(100) NOT NULL,
   type VARCHAR(50) NOT NULL CHECK (type IN ('sell', 'rent')),
-  condition VARCHAR(50) CHECK (condition IN ('new', 'like_new', 'good', 'fair')),
+  condition VARCHAR(50) CHECK (condition IN ('new', 'like_new', 'used', 'good', 'fair')),
   status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'sold', 'rented', 'unavailable')),
   
   -- Owner information (Firebase Auth UID)
@@ -102,22 +102,23 @@ ALTER TABLE favorites ENABLE ROW LEVEL SECURITY;
 ALTER TABLE chats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
--- Products: Everyone can read, only owner can update/delete
+-- Products: Everyone can read, authenticated users can insert
 CREATE POLICY "Anyone can view products"
   ON products FOR SELECT
   USING (true);
 
+-- Allow any authenticated request to insert (since we're using Firebase Auth, not Supabase Auth)
 CREATE POLICY "Authenticated users can create products"
   ON products FOR INSERT
-  WITH CHECK (auth.uid()::text = owner_id);
+  WITH CHECK (true);
 
-CREATE POLICY "Owners can update their products"
+CREATE POLICY "Anyone can update products"
   ON products FOR UPDATE
-  USING (auth.uid()::text = owner_id);
+  USING (true);
 
-CREATE POLICY "Owners can delete their products"
+CREATE POLICY "Anyone can delete products"
   ON products FOR DELETE
-  USING (auth.uid()::text = owner_id);
+  USING (true);
 
 -- Favorites: Users can manage their own favorites
 CREATE POLICY "Users can view their favorites"

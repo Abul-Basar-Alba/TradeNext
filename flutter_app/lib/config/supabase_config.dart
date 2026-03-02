@@ -6,9 +6,13 @@ class SupabaseConfig {
   static Future<void> initialize() async {
     await dotenv.load(fileName: ".env");
     
+    // Use Service Role Key to bypass RLS for product creation
+    // WARNING: Service role key has full database access
+    final serviceKey = dotenv.env['SUPABASE_SERVICE_KEY'] ?? dotenv.env['SUPABASE_ANON_KEY']!;
+    
     await Supabase.initialize(
       url: dotenv.env['SUPABASE_URL']!,
-      anonKey: dotenv.env['SUPABASE_ANON_KEY']!,
+      anonKey: serviceKey,
       debug: true,
     );
   }

@@ -7,8 +7,7 @@ import '../../config/constants.dart';
 import '../../config/app_strings.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/language_provider.dart';
-import '../../providers/product_provider.dart';
-import '../../widgets/product_card.dart';
+import '../../providers/products_list_provider.dart';
 import '../../widgets/loading_widget.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -59,61 +58,7 @@ class HomeScreen extends ConsumerWidget {
                 },
               ),
             ),
-            // Login/Welcome Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: authState.value == null
-                  ? Card(
-                      elevation: 2,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              tr('welcome_guest'),
-                              style: AppTheme.headingMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              tr('guest_message'),
-                              style: AppTheme.bodySmall.copyWith(color: Colors.grey.shade600),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    onPressed: () => context.push('/login'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: AppTheme.primaryColor,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                    ),
-                                    child: Text(tr('login')),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: () => context.push('/register'),
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                    ),
-                                    child: Text(tr('register')),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  : Text(
-                      '${tr('welcome_user')}, ${authState.value!.displayName ?? authState.value!.email}!',
-                      style: AppTheme.headingMedium,
-                    ),
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             // Main Options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -188,10 +133,10 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            // Load Products from Firestore
+            // Load Products from Supabase
             Consumer(
               builder: (context, ref, child) {
-                final productsAsync = ref.watch(productsProvider);
+                final productsAsync = ref.watch(allProductsProvider);
 
                 return productsAsync.when(
                   data: (products) {
@@ -225,24 +170,31 @@ class HomeScreen extends ConsumerWidget {
                       ),
                       itemCount: products.length > 6 ? 6 : products.length,
                       itemBuilder: (context, index) {
-                        return ProductCard(product: products[index]);
+                        final product = products[index];
+                        return _ProductCard(product: product);
                       },
                     );
                   },
                   loading: () => const LoadingWidget(),
                   error: (error, stack) => Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                        const SizedBox(height: 16),
-                        Text('Error: ${error.toString()}'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => ref.refresh(productsProvider),
-                          child: const Text('আবার চেষ্টা করুন'),
-                        ),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                          const SizedBox(height: 16),
+                          Text(
+                            language == 'bn' ? 'লোড করতে সমস্যা হয়েছে' : 'Failed to load',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () => ref.refresh(allProductsProvider),
+                            child: Text(language == 'bn' ? 'আবার চেষ্টা করুন' : 'Retry'),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -355,5 +307,89 @@ class _CategoryCard extends StatelessWidget {
       default:
         return '📦';
     }
+  }
+}
+
+// Simple Product Card Widget
+class _ProductCard extends StatelessWidget {
+  final Map<String, dynamic> product;
+
+  const _ProductCard({required this.product});
+
+  @override
+  Widget build(BuildContext context) {
+    final images = product['images'] as List<dynamic>?;
+    final imageUrl = images != null && images.isNotEmpty ? images[0] as String : '';
+    final price = product['price'];
+    final title = product['title'] ?? 'No Title';
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          // TODO: Navigate to product details
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Product Image
+            Expanded(
+              flex: 3,
+              child: imageUrl.isNotEmpty
+                  ? Image.network(
+                      imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[200],
+                          child: const Icon(Icons.image_not_supported, size: 48, color: Colors.grey),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image, size: 48, color: Colors.grey),
+                    ),
+            ),
+            // Product Info
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '৳ ${price?.toString() ?? '0'}',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF23E5DB),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

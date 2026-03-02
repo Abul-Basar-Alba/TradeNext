@@ -25,7 +25,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: '/', // Home screen first (Bikroy style)
     redirect: (context, state) {
-      final isAuthenticated = authState.value != null;
+      // Handle loading and error states
+      if (authState.isLoading) {
+        return null; // Wait for loading to complete
+      }
+      
+      final isAuthenticated = authState.hasValue && authState.value != null;
       final isAuthRoute = state.matchedLocation.startsWith('/auth');
       
       // Protected routes - শুধু এগুলোতে login লাগবে
